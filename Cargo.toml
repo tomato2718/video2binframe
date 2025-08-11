@@ -1,0 +1,8 @@
+[package]
+name = "video2binframe"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+image = "0.25.6"
+rsmpeg = { version = "0.17.0", features = ["link_system_ffmpeg"] }
