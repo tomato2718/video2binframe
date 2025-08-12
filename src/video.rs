@@ -65,7 +65,7 @@ impl VideoCapture {
         Ok((index as i32, decoder))
     }
 
-    pub fn extract(&mut self) -> Result<Option<AVPacket>, &'static str> {
+    pub fn extract(&mut self) -> Result<Option<AVPacket>, ErrorMessage> {
         loop {
             let packet = match self.input.read_packet() {
                 Ok(Some(p)) => p,
