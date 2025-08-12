@@ -13,9 +13,12 @@ const ERR_FILE_EOF: ErrorMessage = "File EOF";
 const ERR_READING_FILE: ErrorMessage = "Error reading file";
 
 pub struct VideoCapture {
-    context: AVFormatContextInput,
+    input: AVFormatContextInput,
     video_index: i32,
     decoder: AVCodecContext,
+    pub width: u32,
+    pub height: u32,
+    pub fps: u32,
 }
 
 impl VideoCapture {
@@ -24,9 +27,12 @@ impl VideoCapture {
         let (video_index, decoder) = VideoCapture::find_video_codec(&context)?;
 
         Ok(VideoCapture {
-            context,
-            video_index,
-            decoder,
+            input: context,
+            video_index: video_index,
+            width: decoder.width as u32,
+            height: decoder.height as u32,
+            fps: decoder.framerate.num as u32,
+            decoder: decoder,
         })
     }
 
@@ -42,13 +48,16 @@ impl VideoCapture {
     }
 
     fn find_video_codec(
-        context: &AVFormatContextInput,
+        input: &AVFormatContextInput,
     ) -> Result<(i32, AVCodecContext), ErrorMessage> {
-        let (index, codec) = match context.find_best_stream(AVMEDIA_TYPE_VIDEO) {
+        let (index, codec) = match input.find_best_stream(AVMEDIA_TYPE_VIDEO) {
             Ok(Some(res)) => res,
             _ => return Err(ERR_FAILED_TO_FIND_VIDEO),
         };
         let mut decoder = AVCodecContext::new(&codec);
+        decoder
+            .apply_codecpar(&input.streams()[index].codecpar())
+            .unwrap();
         match decoder.open(None) {
             Ok(_) => (),
             _ => return Err(ERR_FAILED_TO_OPEN_DECODER),
@@ -59,7 +68,7 @@ impl VideoCapture {
 
     pub fn extract(&mut self) -> Result<AVPacket, &'static str> {
         loop {
-            let packet = match self.context.read_packet() {
+            let packet = match self.input.read_packet() {
                 Ok(Some(p)) => p,
                 Ok(None) => return Err(ERR_FILE_EOF),
                 Err(_) => return Err(ERR_READING_FILE),
@@ -69,5 +78,20 @@ impl VideoCapture {
             }
             return Ok(AVPacket::from(packet));
         }
+    }
+
+    pub fn decode(&mut self, packet: &AVPacket) -> Vec<Vec<u8>> {
+        self.decoder
+            .send_packet(Some(packet))
+            .expect("Should be ok");
+        let mut res = Vec::new();
+        while let Ok(frame) = self.decoder.receive_frame() {
+            let mut buffer = vec![0u8; frame.image_get_buffer_size(1).unwrap()];
+            frame
+                .image_copy_to_buffer(&mut buffer, 1)
+                .expect("Should be ok");
+            res.push(buffer)
+        }
+        res
     }
 }
