@@ -6,13 +6,13 @@ Dump frames from video into black & white binaries
 
 ### Signature
 
-Use 16 bytes to store the size, encoded in UTF-8. Remaining padding are fill with 0x00
+Use 24 bytes to store the size, encoded in UTF-8. Remaining padding are fill with 0x00
 
 For example
 
 ```plaintext
-480x360
-34 38 30 78 33 36 30 00 00 00 00 00 00 00 00 00
+480x360@30fps
+34 38 30 78 33 36 30 40 33 30 66 70 73 00 00 00 00 00 00 00 00 00 00 00
 ```
 
 ### Frame Information
