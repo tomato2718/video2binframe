@@ -1,3 +1,8 @@
+use std::env;
+use video2binframe::run;
+
 fn main() {
-    println!("Hello, world!");
+    let args: Vec<String> = env::args().collect();
+
+    run(&args[1], &args[2]);
 }
