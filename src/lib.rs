@@ -1,3 +1,4 @@
+mod binframe;
 mod core;
 mod image;
 mod video;
